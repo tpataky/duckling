@@ -1,2 +1,2 @@
 # duckling
-Home of the pretty printing library duckling
+Home of the duckling pretty printing library

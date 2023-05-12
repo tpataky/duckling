@@ -1,11 +1,11 @@
-package duckling
+package io.github.tpataky.duckling
 
-import cats.{Eval, Id, Monad, Monoid}
 import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.foldable._
 import cats.syntax.functor._
+import cats.{Eval, Id, Monad, Monoid}
 
 import java.util
 import scala.annotation.tailrec
@@ -257,7 +257,16 @@ sealed trait Doc[+A] {
 
   final def layout(opts: LayoutOpts): Layout[A] = Doc.layout(this, opts).head.layout.value
 
-  final def render[R](opts: LayoutOpts, renderer: Renderer[A, R]): R = layout(opts).render(renderer)
+  final def render[R](opts: LayoutOpts, renderer: Renderer[A, R]): R = {
+    val ls = layout(opts)
+    ls.render(renderer)
+  }
+
+  final def render[M[_]: Monad, R](opts: LayoutOpts, renderer: RendererM[M, A, R]): M[R] = {
+    val ls = layout(opts)
+    ls.render(renderer)
+  }
+
 }
 
 object Doc {
@@ -317,11 +326,6 @@ object Doc {
       case Nil | _ :: Nil => docs
       case hd :: tl       => (hd + sep) :: intersperse(tl, sep)
     }
-
-  def render[A, R](d: Doc[A], opts: LayoutOpts, renderer: Renderer[A, R]): R = {
-    val ls = layout(d, opts)
-    ls.head.layout.value.render(renderer)
-  }
 
   def layout[A](d: Doc[A], opts: LayoutOpts): NonEmptyChain[MeasuredLayout[A]] = {
 

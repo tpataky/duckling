@@ -1,4 +1,4 @@
-package duckling
+package io.github.tpataky.duckling
 
 import munit.FunSuite
 

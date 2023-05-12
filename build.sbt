@@ -1,4 +1,8 @@
+organization := "io.github.tpataky"
+
 name := "duckling"
+
+version := "0.0.1-SNAPSHOT"
 
 scalaVersion := "2.13.8"
 

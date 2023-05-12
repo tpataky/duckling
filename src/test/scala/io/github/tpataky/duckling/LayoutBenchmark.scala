@@ -1,4 +1,4 @@
-package duckling
+package io.github.tpataky.duckling
 
 import cats.data.NonEmptyChain
 import org.openjdk.jmh.annotations.{Benchmark, Scope, State}
