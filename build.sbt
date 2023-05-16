@@ -2,9 +2,19 @@ organization := "io.github.tpataky"
 
 name := "duckling"
 
-version := "0.0.1-SNAPSHOT"
+version := "0.0.1"
 
 scalaVersion := "2.13.8"
+
+versionScheme := Some("semver-spec")
+
+licenses := Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+
+publishMavenStyle := true
+publishTo := sonatypePublishToBundle.value
+sonatypeCredentialHost := "s01.oss.sonatype.org"
+sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("tpataky", "duckling", "tpataky@gmail.com"))
 
 scalacOptions ++= Seq(
   "-deprecation",
