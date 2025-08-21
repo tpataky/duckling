@@ -29,8 +29,7 @@ Let's take a look at an example:
 ```scala
 val d = Doc("Hello")
 val layoutOptions = LayoutOpts(pageWidth = 120, indent = 2)
-val renderer = Renderer.string(System.lineSeparator()) 
-d.render(layoutOptions, renderer) // val res0: String = Hello
+d.render(layoutOptions, Renderer.string) // val res0: String = Hello
 
 ```
 
@@ -58,11 +57,10 @@ type forms a monoid where `+` is the associative operator and `Doc.empty` is the
 
 ```scala
 val layoutOptions = LayoutOpts(pageWidth = 80, indent = 2)
-val renderer = Renderer.string(System.lineSeparator())
 
 val d = Doc("Hello") + Doc("world")
 
-d.render(layoutOptions, renderer)  // val res0: String = Helloworld
+d.render(layoutOptions, Renderer.string)  // val res0: String = Helloworld
 ```
 
 The precise behaviour is given in the aforementioned paper by Bernardy, but for a simple visual representation
@@ -82,11 +80,10 @@ to the end of the first document (with the `flush` method) and then horizontally
 Example:
 ```scala
 val layoutOptions = LayoutOpts(pageWidth = 80, indent = 2)
-val renderer = Renderer.string(System.lineSeparator())
 
 val d = Doc("Hello") \ Doc("world")
 
-d.render(layoutOptions, renderer) 
+d.render(layoutOptions, Renderer.string) 
 // val res0: String =
 // Hello
 // world
@@ -97,15 +94,70 @@ d.render(layoutOptions, renderer)
 Example:
 ```scala
 val layoutOptions = LayoutOpts(pageWidth = 80, indent = 2)
-val renderer = Renderer.string(System.lineSeparator())
 
 val d = Doc("Hello") <+> Doc("world")
 
-d.render(layoutOptions, renderer)
+d.render(layoutOptions, Renderer.string)
 // val res0: String = Hello world
 ```
 
 ### Joining with `hangWith`
-The `hangWith` method will produce to alternative layouts for a document one where the documents are joined
-horizontally with the given separator between the two, the second one where the two are joinde horizontally
-with potentially some extra indentation prefixed added to the second document.
+The `hangWith` method will produce two alternative layouts for a document: one where the documents are joined
+horizontally with the given separator between the two, the second one where the two are joined horizontally
+with potentially some extra indentation added to the second document.
+```scala
+val d = Doc("lorem ipsum").hangWith(Doc.space, 3, Doc("dolor sit amet"))
+
+d.render(LayoutOpts(15, 2), Renderer.string)
+// val res0: String =
+//   lorem ipsum
+//     dolor sit amet
+
+d.render(LayoutOpts(80, 2), Renderer.string)
+// val res1: String = lorem ipsum dolor sit amet
+```
+
+### Annotating documents
+It is possible to annotate documents with arbitrary values with the `annotate` method. The renderer can then use these
+values to produce different output based on the annotations.
+
+```scala
+sealed trait Color
+object Color {
+  case object Red extends Color
+  case object Green extends Color
+  case object Blue extends Color
+}
+
+val renderer = new Renderer[Color, String] {
+  override def init: String = ""
+
+  override def indent(n: Int, r0: String): String = r0 + " " * n
+
+  override def enterAnnotatedSection(a: Color, r0: String): String =
+    a match {
+      case Color.Red   => r0 + """<span style="color:red">"""
+      case Color.Green => r0 + """<span style="color:green">"""
+      case Color.Blue  => r0 + """<span style="color:blue">"""
+    }
+
+  override def leaveAnnotatedSection(a: Color, r0: String): String =
+    r0 + "</span>"
+
+  override def lineBreak(r0: String): String = r0 + "</br>\n"
+
+  override def str(s: String, r0: String): String =
+    r0 + s
+}
+
+val d = Doc("red").annotate(Color.Red) \
+  Doc("green").annotate(Color.Green) \
+  Doc("blue").annotate(Color.Blue)
+
+
+d.render(LayoutOpts(80, 2), renderer)
+// val res0: String =
+//   <span style="color:red">red</span></br>
+//   <span style="color:green">green</span></br>
+//   <span style="color:blue">blue</span>
+```

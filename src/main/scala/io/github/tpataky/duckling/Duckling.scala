@@ -51,6 +51,8 @@ object Renderer {
     new MonoidRenderer[R](inject, lineSeparator)
 
   def string(lineSeparator: String): MonoidRenderer[String] = apply(identity, lineSeparator)
+
+  def string: MonoidRenderer[String] = string(System.lineSeparator())
 }
 
 sealed trait Layout[+A] {
@@ -206,46 +208,107 @@ object MeasuredLayout {
 }
 
 sealed trait Doc[+A] {
+  /**
+   * Produces a new document that is the direct horizontal concatenation of this document and the other.
+   */
   final def concat[B >: A](other: Doc[B]): Doc[B] = Doc.Concat(this, other)
 
+  /**
+   * Alias for `concat`.
+   */
   final def +[B >: A](other: Doc[B]): Doc[B] = concat(other)
 
+  /**
+   * Produces a new document that is the vertical concatenation of this document and the other.
+   * It is a shorthand for `this.flush + other`.
+   */
   final def vconcat[B >: A](other: Doc[B]): Doc[B] = Doc.Concat(this.flush, other)
 
+  /**
+   * Alias for `vconcat`.
+   */
   final def \[B >: A](other: Doc[B]): Doc[B] = vconcat(other)
 
+  /**
+   * Produces a new document that has two alternative representations, either this or the other. The layout
+   * algorithm will choose the one that fits best.
+   *
+   * For example the document
+   *   (Doc("a") <+> Doc("+") <+> Doc("b")).orElse(Doc("a") \ Doc("+") \ Doc("b"))
+   * can be rendered as either
+   *   a + b
+   * or as
+   *   a
+   *   +
+   *   b
+   */
   final def orElse[B >: A](alternative: Doc[B]): Doc[B] = Doc.Alternatives(this, alternative)
 
+  /**
+   * Alias for `orElse`.
+   */
   final def |[B >: A](alternative: Doc[B]): Doc[B] = orElse(alternative)
 
+  /**
+   * Adds a line break after this document.
+   */
   final def flush: Doc[A] = Doc.Flush(this)
 
+  /**
+   * Adds metadata to this document. Renderers can use this metadata to produce rich output.
+   */
   final def annotate[B >: A](a: B): Doc[B] = Doc.Annotate(a, this)
 
+  /**
+   * Produces a new document that is either a horizontal concatenation of this, sep and d,
+   * or a vertical concatenation of this and d indented by n spaces.
+   */
   final def hangWith[B >: A](sep: Doc[B], n: Int, d: Doc[B]): Doc[B] =
     hangWith(sep, Some(n), d)
 
+  /**
+   * Same as hangWith[B >: A](sep: Doc[B], n: Int, d: Doc[B]), but the amount of indentation is determined
+   * by the layout options specified at rendering time.
+   */
   final def hangWith[B >: A](sep: Doc[B], d: Doc[B]): Doc[B] =
     hangWith(sep, None, d)
 
   private[this] def hangWith[B >: A](sep: Doc[B], n: Option[Int], d: Doc[B]): Doc[B] =
     (this + sep + d) | (this.flush + Doc.Indent(n, d))
 
+  /**
+   * Shorthand for hangWith(Doc.space, Some(n), d)
+   */
   final def hang[B >: A](n: Int, d: Doc[B]): Doc[B] =
     hangWith(Doc.space, Some(n), d)
 
+  /**
+   * Shorthand for hangWith(Doc.space, d)
+   */
   final def hang[B >: A](d: Doc[B]): Doc[B] =
     hangWith(Doc.space, None, d)
 
+  /**
+   * Alias for hang
+   */
   final def <\>[B >: A](other: Doc[B]): Doc[B] =
     hangWith(Doc.space, None, other)
 
+  /**
+   * Shorthand for hangWith(Doc.empty, other)
+   */
   final def <\\>[B >: A](other: Doc[B]): Doc[B] =
     hangWith(Doc.empty, None, other)
 
+  /**
+   * Shorthand for `this + Doc.space + other`.
+   */
   final def <+>[B >: A](other: Doc[B]): Doc[B] =
     this + Doc.space + other
 
+  /**
+   * Encloses this document with the left and right documents.
+   */
   final def enclose[B >: A](l: Doc[B], r: Doc[B]): Doc[B] =
     l + this + r
 
@@ -320,6 +383,12 @@ object Doc {
       Doc.Select(_.height == 0, horizontal, vertical)
     }
   }
+
+  def intersperseWith[A](docs: List[Doc[A]], addSep: Doc[A] => Doc[A]): List[Doc[A]] =
+    docs match {
+      case Nil | _ :: Nil => docs
+      case hd :: tl       => addSep(hd) :: intersperseWith(tl, addSep)
+    }
 
   def intersperse[A](docs: List[Doc[A]], sep: Doc[A]): List[Doc[A]] =
     docs match {

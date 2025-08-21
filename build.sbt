@@ -4,8 +4,8 @@ name := "duckling"
 
 version := "0.0.2"
 
-val scala2 = "2.13.8"
-val scala3 = "3.3.0"
+val scala2 = "2.13.16"
+val scala3 = "3.3.6"
 
 scalaVersion := scala2
 
