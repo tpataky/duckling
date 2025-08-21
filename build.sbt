@@ -2,7 +2,7 @@ organization := "io.github.tpataky"
 
 name := "duckling"
 
-version := "0.0.2"
+version := "0.1.0"
 
 val scala2 = "2.13.16"
 val scala3 = "3.3.6"
